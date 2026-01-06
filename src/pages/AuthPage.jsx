@@ -1,33 +1,38 @@
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { Col, Image, Row, Button, Modal, Form } from "react-bootstrap";
-import { useEffect, useState } from "react";
-import axios from "axios";
-import useLocalStorage from "use-local-storage";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../components/AuthProvider";
 
 export default function AuthPage() {
   const loginImage = "https://sig1.co/img-twitter-1";
-  const url =
-    "https://eabd667d-2897-4709-a889-588569847bc1-00-czxnb89ib3y5.sisko.replit.dev";
   const [modalShow, setModalShow] = useState(null);
   const handleShowSignUp = () => setModalShow("SignUp");
   const handleShowLogin = () => setModalShow("Login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [authToken, setAuthToken] = useLocalStorage("authToken", "");
-
   const navigate = useNavigate();
 
+  const auth = getAuth();
+  const { currentUser } = useContext(AuthContext);
+
   useEffect(() => {
-    if (authToken) {
-      navigate("/profile");
-    }
-  }, [authToken, navigate]);
+    if (currentUser) navigate("/profile");
+  }, [currentUser, navigate]);
 
   const handleSignUp = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${url}/signup`, { username, password });
-      console.log(res.data);
+      const res = await createUserWithEmailAndPassword(
+        auth,
+        username,
+        password
+      );
+      console.log(res.user);
     } catch (error) {
       console.error(error);
     }
@@ -36,11 +41,7 @@ export default function AuthPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${url}/login`, { username, password });
-      if (res.data && res.data.auth === true && res.data.token) {
-        setAuthToken(res.data.token);
-        console.log("Login was successful, token saved");
-      }
+      await signInWithEmailAndPassword(auth, username, password);
     } catch (error) {
       console.error(error);
     }
@@ -134,7 +135,7 @@ export default function AuthPage() {
               </p>
 
               <Button className="rounded-pill" type="submit">
-                {modalShow === "Sign up" ? "Sign up" : "Log in"}
+                {modalShow === "SignUp" ? "Sign up" : "Log in"}
               </Button>
             </Form>
           </Modal.Body>
